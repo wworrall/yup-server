@@ -1,6 +1,11 @@
 import * as yup from "yup";
 import http, { IncomingMessage, ServerResponse } from "node:http";
-import { ImATeapot, NotFound, UnprocessableEntity } from "http-errors";
+import {
+  ImATeapot,
+  InternalServerError,
+  NotFound,
+  UnprocessableEntity,
+} from "http-errors";
 
 type Context<User = any, Body = any, Query = any, Params = any> = {
   user: User;
@@ -198,11 +203,51 @@ function createServer(routes: Route[]) {
   };
 }
 
+type ConnectMiddleware = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: (err?: unknown) => void
+) => void;
+
+type ConnectMiddlewareErrorHandler = (err: unknown) => Promise<void>;
+
+/**
+ * Generate a request handler function that will execute connect-style middleware.
+ *
+ * @param connectMiddleware The middleware to execute
+ * @param errorHandler The error handler to execute if the middleware returns an error
+ *
+ * @returns A request handler function
+ *
+ */
+function useConnectMiddleware(
+  connectMiddleware: ConnectMiddleware,
+  errorHandler?: ConnectMiddlewareErrorHandler
+): RequestHandlerFunction {
+  return async function ({ req, res }) {
+    let middlewareError = await new Promise<unknown | undefined>((resolve) => {
+      connectMiddleware(req, res, (err) => {
+        resolve(err);
+      });
+    });
+
+    if (middlewareError) {
+      if (!errorHandler) {
+        throw new InternalServerError(`Middleware error: ${middlewareError}`);
+      }
+      await errorHandler(middlewareError);
+    }
+  };
+}
+
 export {
+  ConnectMiddleware,
+  ConnectMiddlewareErrorHandler,
   Context,
   HTTPMethod,
   RequestHandler,
   RequestHandlerFunction,
   Route,
+  useConnectMiddleware,
   createServer,
 };
