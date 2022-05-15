@@ -203,9 +203,9 @@ function createServer(routes: Route[]) {
   };
 }
 
-type ConnectMiddleware = (
-  req: IncomingMessage,
-  res: ServerResponse,
+type ConnectMiddleware = <Req = IncomingMessage, Res = ServerResponse>(
+  req: Req,
+  res: Res,
   next: (err?: unknown) => void
 ) => void;
 
