@@ -209,7 +209,7 @@ type ConnectMiddleware = (
   next: (err?: unknown) => void
 ) => void;
 
-type ConnectMiddlewareErrorHandler = (err: unknown) => Promise<void>;
+type ConnectMiddlewareErrorHandler = (err: unknown) => any;
 
 /**
  * Generate a request handler function that will execute connect-style middleware.
